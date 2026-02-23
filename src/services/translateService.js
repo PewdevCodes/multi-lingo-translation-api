@@ -1,4 +1,4 @@
-import { googleTranslate } from "../providers/googleProvider";
+import { translateProvider } from "../providers/index.js";
 
 export async function translateService(payload) {
 
@@ -10,8 +10,7 @@ export async function translateService(payload) {
     }
 
     // delegating a call to the Provider
-    const translatedText = await googleTranslate({ text, source, target 
-    });
+    const translatedText = await translateProvider({ text, source, target });
 
     // output in a standard manner 
     return { 
