@@ -1,15 +1,16 @@
-import { googleTranslate } from "./googleProvider";
+import { googleTranslate } from './googleProvider.js';
 
-export async function translateProvider(data) { 
+const PROVIDERS = {
+  google: googleTranslate,
+};
 
-    // This function can be extended to support multiple providers in the future
+export async function translate({ text, source, target }) {
+  const providerName = process.env.PROVIDER || 'google';
+  const providerFn = PROVIDERS[providerName];
 
-    const provider = process.env.PROVIDER || "google";
+  if (!providerFn) {
+    throw new Error(`Unsupported provider: ${providerName}`);
+  }
 
-    switch(provider) {
-        case "google":
-            return await googleTranslate(data);
-        default:
-            throw new Error(`Unsupported provider: ${provider}`);
-    }
+  return providerFn({ text, source, target });
 }

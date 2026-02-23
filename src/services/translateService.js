@@ -1,43 +1,35 @@
-import { translateProvider } from "../providers/index.js";
+import { translate } from '../providers/index.js';
+import { redis } from '../config/redis.js';
 
-//Redis can be used here for caching translations to improve performance and reduce costs, but for simplicity, it's not implemented in this basic version of the service.
+const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
-import { redis } from "../config/redis.js";
+export async function translateText({ text, source = 'auto', target }) {
+  if (!text || !target) {
+    const error = new Error('Missing required fields: text, target');
+    error.statusCode = 400;
+    throw error;
+  }
 
-    // Example of how caching could be implemented:
-    const key = `t:${source}:${target}:${text}`;
+  // Check cache
+  const cacheKey = `t:${source}:${target}:${text}`;
+  const cached = await redis.get(cacheKey);
 
-    const cached = await redis.get(key);
+  if (cached) {
+    return JSON.parse(cached);
+  }
 
-    if(cached){
-        return JSON.parse(cached);
-    }
+  // Delegate to provider
+  const translatedText = await translate({ text, source, target });
 
-    const translatedText = await translateProvider({ text, source, target });
-    
-    // Cache the result for future requests (e.g., for 24 hours)
-    await redis.set(key, 
-        JSON.stringify(translatedText), 
-        'EX', 24 * 60 * 60
-    );
+  const result = {
+    source,
+    target,
+    originalText: text,
+    translatedText,
+  };
 
-export async function translateService(payload) {
+  // Cache for future requests
+  await redis.set(cacheKey, JSON.stringify(result), 'EX', CACHE_TTL_SECONDS);
 
-    const { text , source="auto" , target } = payload;
-
-    // validations for the input 
-    if( !text || !source || !target ) {
-        throw new Error("Missing required fields: text, source, target");
-    }
-
-    // delegating a call to the Provider
-    const translatedText = await translateProvider({ text, source, target });
-
-    // output in a standard manner 
-    return { 
-        source,
-        target,
-        originalText: text,
-        translatedText
-    };
+  return result;
 }

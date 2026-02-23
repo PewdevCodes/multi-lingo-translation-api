@@ -1,10 +1,10 @@
-import { translateService } from "../services/translateService";
+import { translateText } from '../services/translateService.js';
 
-export async function translateController( req, res) { 
-    try {
-        const result = await translateService(req.body);
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
+export async function handleTranslate(req, res, next) {
+  try {
+    const result = await translateText(req.body);
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
 }
